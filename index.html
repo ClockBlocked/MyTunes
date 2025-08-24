@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en" class="dim">
+<head>
+    <!-- External Dependencies -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ytdl-core@4.11.2/dist/ytdl-core.min.js"></script>
+    
+    <!-- Meta Tags -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyBeats™</title>
+    <meta name="description" content="Stream & share your favourite music for free." />
+    <meta name="keywords" content="music, player, web, audio, streaming, playlist, songs, albums, artists, videos, sharing, media, radio, pop, hiphop, country, dance, party, dubstep, alternative, rock, free, forever" />
+    <meta name="author" content="ClockBlocked" />
+    <meta name="theme-color" content="#1f2329" />
+
+    <!-- SEO Meta Tags -->
+    <meta property="og:title" content="MyBeats™ - Stream & Share Music" />
+    <meta property="og:description" content="A sleek and modern web-based music player." />
+    <meta property="og:image" content="thumbnail.jpg" />
+    <meta property="og:url" content="https://koders.cloud" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MyBeats™ - Stream & Share Music" />
+    <meta name="twitter:description" content="A sleek and modern web-based music player." />
+    <meta name="twitter:image" content="thumbnail.jpg" />
+
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="./system/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+
+    <!-- Assets -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="./newNewNew.css" />
+    <link rel="stylesheet" href="./dynamicOverlays.css">
+    <link href="https://dev.wuaze.com/styleSheets/fonts.css" rel="stylesheet" />
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/preline@2.0.3/dist/preline.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" />
+
+    <!-- Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-P0KCT8TSPW"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "G-P0KCT8TSPW");
+    </script>
+    
+    <!-- Inline Styles -->
+    <style>
+      /* ===== Theme Toggle Component ===== */
+      .theme-toggle-container {
+        position: fixed;
+        bottom: 4rem;
+        left: 1rem;
+        z-index: var(--z-tooltip);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .theme-trigger {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--background-400);
+        color: var(--text-100);
+        border-radius: var(--radius-full);
+        cursor: pointer;
+        box-shadow: var(--shadow-md);
+        transition: var(--transition-base);
+      }
+
+      .theme-trigger:hover {
+        background: var(--background-500);
+        transform: translateY(-2px);
+      }
+
+      .theme-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        transform: translateY(100%);
+        opacity: 0;
+        pointer-events: none;
+        transition: var(--transition-smooth);
+      }
+
+      .theme-toggle-container.active .theme-options {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .theme-options button {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--background-400);
+        border: none;
+        border-radius: var(--radius-full);
+        color: var(--text-100);
+        cursor: pointer;
+        transition: var(--transition-fast);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .theme-options button:hover {
+        background: var(--background-500);
+        transform: translateY(-2px);
+      }
+
+      .theme-options button.active {
+        background: var(--accent-primary);
+        color: var(--text-on-accent);
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* ===== Artist Card Component ===== *
+      .artist-card {
+        display: flex; 
+        height: 250px; 
+        flex-direction: row;
+        background-color: #FEFEFE !important;
+        border: 1px solid rgba(234, 238, 242, 0.65);
+      }
+      
+      .artist-card .artist-avatar {
+        float: left;
+      }
+      
+      .text-center > h3,
+      .text-center > .genre-tag,
+      .text-center > p {
+        float: right;
+        justify-content: space-between;
+      }
+      
+      .text-center > h3,
+      .text-center > .genre-tag {
+        margin-left: 1rem; 
+        margin-bottom: 0.5rem; 
+        opacity: 0.5; 
+        transition: opacity 0.65s ease-in-out;
+      }
+      
+      .artist-card:hover .text-center > h3 {
+        opacity: 1; 
+        transition: opacity 0.65s ease-in-out;
+      }
+      
+      .text-center > .genre-tag {
+        margin-top: 2rem;
+      }
+
+
+      #dynamic-content {
+        padding: 0;
+        background-color: var(--background-300) !important;
+        border-top-right-radius: 15px;
+      }
+
+      .album-content,
+      .songs-container {
+        background-color: var(--background-300) !important;
+        border-top-right-radius: 15px;
+      }
+      
+      .album-selector-container, 
+      .album-content {
+        margin-top: 2rem;
+      }
+      
+      .content-offset {
+        border-top-right-radius: 15px;
+      }
+
+      #album-tabs {
+        margin-bottom: 2rem;
+      }
+      **/
+    </style>
+</head>
+
+<body>
+    <!-- Hidden YouTube Player -->
+    <div id="youtube-audio-wrapper" style="position: absolute; left: -9999px;">
+      <div id="youtube-player"></div>
+    </div>
+    
+    <!-- Main Page Wrapper -->
+    <div id="pageWrapper">
+      <!-- Theme Toggle Component -->
+      <div class="theme-toggle-container">
+        <div class="theme-trigger">
+          <svg width="24" height="24" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121z"/>
+          </svg>
+        </div>
+        <div class="theme-options">
+          <button data-theme="light" aria-label="Light theme">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121z"/>
+            </svg>
+          </button>
+          <button data-theme="dim" aria-label="Dim theme">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M9.822 2.238a9 9 0 0 0 11.94 11.94C20.768 18.654 16.775 22 12 22 6.477 22 2 17.523 2 12c0-4.775 3.346-8.768 7.822-9.762zm8.342.053L19 2.5v1l-.836.209a2 2 0 0 0-1.455 1.455L16.5 6h-1l-.209-.836a2 2 0 0 0-1.455-1.455L13 3.5v-1l.836-.209A2 2 0 0 0 15.291.836L15.5 0h1l.209.836a2 2 0 0 0 1.455 1.455zm5 5L24 7.5v1l-.836.209a2 2 0 0 0-1.455 1.455L21.5 11h-1l-.209-.836a2 2 0 0 0-1.455-1.455L18 8.5v-1l.836-.209a2 2 0 0 0 1.455-1.455L20.5 5h1l.209.836a2 2 0 0 0 1.455 1.455z"/>
+            </svg>
+          </button>
+          <button data-theme="dark" aria-label="Dark theme">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1-8.313-12.454z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Bar -->
+      <nav id="navbar" class="glass-effect">
+        <div class="navbar-content">
+          <div class="navbar-left">
+            <button class="menu-trigger" id="menu-trigger" title="Menu">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="navbar-center" id="now-playing-area" title="Click to open Now Playing">
+            <div class="now-playing-display">
+              <div id="navbar-logo" class="flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.369 4.369 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+                </svg>
+              </div>
+
+              <img id="navbar-album-cover" src="" alt="Album Cover" class="hidden object-cover" />
+
+              <div class="now-playing-info">
+                <div id="navbar-song-title" class="truncate">No song playing</div>
+                <div id="navbar-artist" class="truncate">Select a song to get started</div>
+              </div>
+
+              <div class="play-indicator" id="play-indicator"></div>
+            </div>
+          </div>
+
+          <div class="navbar-right">
+            <div class="nav-controls">
+              <button class="nav-control-btn" id="prev-btn-navbar" title="Previous Track">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
+                </svg>
+              </button>
+
+              <button class="nav-control-btn play-pause" id="play-pause-navbar" title="Play/Pause">
+                <svg id="play-icon-navbar" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                <svg id="pause-icon-navbar" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </button>
+
+              <button class="nav-control-btn" id="next-btn-navbar" title="Next Track">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z" />
+                </svg>
+              </button>
+            </div>
+            <button id="theme-toggle" title="Toggle Theme" class="ml-2">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M17.293 13.293A8 8 0 116.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Dropdown Menu -->
+      <div class="dropdown-menu" id="dropdown-menu">
+        <div class="dropdown-header">
+          <h3 class="dropdown-title">Music Library</h3>
+          <button class="dropdown-close" id="dropdown-close">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="dropdown-section">
+          <h4 class="section-title">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+            </svg>
+            Favorites
+          </h4>
+
+          <div class="dropdown-item" id="favorite-songs">
+            <div class="dropdown-item-icon">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="dropdown-item-content">
+              <div class="dropdown-item-title">Favorite Songs</div>
+              <div class="dropdown-item-subtitle">Your liked tracks</div>
+            </div>
+            <div class="dropdown-item-badge" id="favorite-songs-count">0</div>
+          </div>
+
+          <div class="dropdown-item" id="favorite-artists">
+            <div class="dropdown-item-icon">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 12a3 3 0 00-3-3H2a1 1 0 100 2h4a1 1 0 011 1v.5a1 1 0 102 0V12zm3-8a3 3 0 100 6 3 3 0 000-6zm-1 4a1 1 0 11-2 0 1 1 0 012 0z" />
+              </svg>
+            </div>
+            <div class="dropdown-item-content">
+              <div class="dropdown-item-title">Favorite Artists</div>
+              <div class="dropdown-item-subtitle">Artists you follow</div>
+            </div>
+            <div class="dropdown-item-badge" id="favorite-artists-count">0</div>
+          </div>
+        </div>
+
+        <div class="dropdown-section">
+          <h4 class="section-title">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+            </svg>
+            Library
+          </h4>
+
+          <div class="dropdown-item" id="recently-played">
+            <div class="dropdown-item-icon">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="dropdown-item-content">
+              <div class="dropdown-item-title">Recent Plays</div>
+              <div class="dropdown-item-subtitle">Recently played songs</div>
+            </div>
+            <div class="dropdown-item-badge" id="recent-count">0</div>
+          </div>
+
+          <div class="dropdown-item" id="queue-view">
+            <div class="dropdown-item-icon">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
+              </svg>
+            </div>
+            <div class="dropdown-item-content">
+              <div class="dropdown-item-title">Up Next</div>
+              <div class="dropdown-item-subtitle">Songs in queue</div>
+            </div>
+            <div class="dropdown-item-badge" id="queue-count">0</div>
+          </div>
+        </div>
+
+        <div class="dropdown-section">
+          <h4 class="section-title">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+            </svg>
+            Playlists
+          </h4>
+
+          <div class="dropdown-item" id="create-playlist">
+            <div class="dropdown-item-icon">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="dropdown-item-content">
+              <div class="dropdown-item-title">Create Playlist</div>
+              <div class="dropdown-item-subtitle">Make a new playlist</div>
+            </div>
+          </div>
+
+          <div id="playlists-list">
+            <div class="empty-state" id="playlists-empty">
+              <div class="empty-state-icon">
+                <svg class="w-full h-full" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                </svg>
+              </div>
+              <div class="empty-state-text">
+                No playlists yet.<br />
+                Create your first playlist!
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dropdown-section">
+          <h4 class="section-title">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+            </svg>
+            Actions
+          </h4>
+
+          <div class="dropdown-item" id="shuffle-all">
+            <div class="dropdown-item-icon">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="dropdown-item-content">
+              <div class="dropdown-item-title">Shuffle All</div>
+              <div class="dropdown-item-subtitle">Play all songs randomly</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dropdown-section">
+          <h4 class="section-title">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+            </svg>
+            Settings
+          </h4>
+
+          <div class="dropdown-item" id="app-settings">
+            <div class="dropdown-item-icon">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="dropdown-item-content">
+              <div class="dropdown-item-title">Preferences</div>
+              <div class="dropdown-item-subtitle">App settings & options</div>
+            </div>
+          </div>
+
+          <div class="dropdown-item" id="about-app">
+            <div class="dropdown-item-icon">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="dropdown-item-content">
+              <div class="dropdown-item-title">About</div>
+              <div class="dropdown-item-subtitle">Version & information</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Music Player -->
+      <div class="musicPlayer" id="musicPlayer">
+        <div id="offcanvas-handle" class="offcanvas-handle flex items-center justify-center py-1">
+          <div class="w-10 h-1 bg-gray-500 rounded-full"></div>
+        </div>
+
+        <div class="header">
+          <button class="close" id="closePlayer">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="body">
+          <!-- Now Playing Tab -->
+          <div class="popup-tab-content" data-tab="now-playing">
+            <img id="popup-album-cover" src="" alt="Album Cover" class="popup-album-cover" />
+
+            <div class="popup-song-info">
+              <h4 id="popup-song-title" class="popup-song-title"></h4>
+              <p id="popup-artist-name" class="popup-artist-name"></p>
+              <p id="popup-album-name" class="popup-album-name"></p>
+            </div>
+
+            <div class="popup-progress">
+              <div class="progress-time">
+                <span id="popup-current-time">0:00</span>
+                <span id="popup-total-time">0:00</span>
+              </div>
+              <div class="popup-progress-bar" id="popup-progress-bar">
+                <div class="popup-progress-fill" id="popup-progress-fill" style="width: 0%;">
+                  <div class="popup-progress-thumb" id="popup-progress-thumb"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="playerControls">
+              <button class="button" id="popup-prev-btn">
+                <svg class="icon" id="iconPrev" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
+                  <path d="M267.5 440.6c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29V96c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4L75.5 231l0 49 192 160z" />
+                </svg>
+              </button>
+
+              <button class="button" id="reWind">
+                <svg class="icon" id="iconRewind" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                  <path d="M459.5 440.6c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29V96c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4L288 214.3V296l171.5 144.6zM256 352V96c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4L11.5 231C4.2 237.5 0 246.5 0 256s4.2 18.5 11.5 24.6l192 160c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29V352z" />
+                </svg>
+              </button>
+
+              <button class="button" id="playPause">
+                <svg class="icon" id="iconPlay" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                  <path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z" />
+                </svg>
+              </button>
+
+              <button class="button" id="fastFoward">
+                <svg class="icon" id="iconForward" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                  <path d="M52.5 440.6c-9.5 7.9-22.8 9.7-34.1 4.4S0 428.4 0 416V96c0-12.4 7.2-23.7 18.4-29s24.5-3.6 34.1 4.4L224 214.3V296L52.5 440.6zM256 352V96c0-12.4 7.2-23.7 18.4-29s24.5-3.6 34.1 4.4l192 160c7.3 6.1 11.5 15.1 11.5 24.6s-4.2 18.5-11.5 24.6L308.5 440.6c-9.5 7.9-22.8 9.7-34.1 4.4S256 428.4 256 416V352z" />
+                </svg>
+              </button>
+
+              <button class="button" id="popup-next-btn">
+                <svg class="icon" id="iconNext" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
+                  <path d="M52.5 440.6c-9.5 7.9-22.8 9.7-34.1 4.4S0 428.4 0 416V96c0-12.4 7.2-23.7 18.4-29s24.5-3.6 34.1 4.4l192 160V96c0-17.7 14.3-32 32-32s32 14.3 32 32v320c0 17.7-14.3 32-32 32s-32-14.3-32-32V271.4L52.5 440.6z" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="popup-actions">
+              <button class="popup-action-btn" id="popup-favorite-btn" title="Add to Favorites">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+                </svg>
+              </button>
+
+              <button class="popup-action-btn" id="popup-queue-btn" title="View Queue">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                </svg>
+              </button>
+
+              <button class="popup-action-btn" id="popup-share-btn" title="Share">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                </svg>
+              </button>
+
+              <button class="popup-action-btn" id="popup-more-btn" title="More Options">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Queue Tab -->
+          <div class="popup-tab-content" data-tab="queue">
+            <ul id="queue-list" class="popup-song-list">
+              <div class="empty-state" id="playlists-empty">
+                <div class="empty-state-icon">
+                  <svg class="w-full h-full" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                  </svg>
+                </div>
+                <div class="empty-state-text">Queue is empty.</div>
+              </div>
+            </ul>
+          </div>
+
+          <!-- Recent Plays Tab -->
+          <div class="popup-tab-content" data-tab="recent">
+            <ul id="recent-list" class="popup-song-list">
+              <div class="empty-state" id="playlists-empty">
+                <div class="empty-state-icon">
+                  <svg class="w-full h-full" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                  </svg>
+                </div>
+                <div class="empty-state-text">No recently played songs.</div>
+              </div>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Player Tabs -->
+        <div id="popUpTabsWrapper">
+          <div class="popup-tabs">
+            <button class="popup-tab active" data-tab="now-playing">Now Playing</button>
+            <button class="popup-tab" data-tab="recent">Recent Plays</button>
+            <button class="popup-tab" data-tab="queue">Up Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div id="mainArea">
+        <main id="main-container" class="content-container max-w-6xl mx-auto pb-24">
+          <div id="contentWrapper" class="relative">
+            <nav id="breadcrumb-nav" class="breadcrumb-navigation flex items-center text-fg-muted">
+              <ol class="breadcrumb-list flex items-center flex-wrap"></ol>
+            </nav>
+
+            <div id="dynamic-content" class="mx-auto max-w-2xl px-6 lg:max-w-7xl lg:px-8">
+              <div class="text-center py-8 md:py-12">
+                <h1 class="text-4xl md:text-5xl font-bold mb-6 gradient-text">Discover Amazing Music</h1>
+                <p class="text-lg md:text-xl text-gray-400 mb-8 md:mb-12 max-w-2xl mx-auto">Explore artists, albums, and songs from your personal library with an immersive listening experience</p>
+              </div>
+              
+              <h4 class="text-2xl md:text-3xl font-bold mb-6 md:mb-8 px-4 font-semibold text-indigo-600">Featured Artists</h4>
+              
+              <div id="featured-artists" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 px-4"></div>
+            </div>
+
+            <div id="content-loading" class="absolute inset-0 bg-bg-default bg-opacity-80 backdrop-blur-sm flex items-center justify-center hidden">
+              <div class="loading-animation">
+                <div class="spinner-container">
+                  <div class="spinner"></div>
+                </div>
+                <p class="mt-4 text-fg-muted">Loading content...</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <!-- Floating Action Button -->
+      <button class="floating-add-button" id="floating-add-button" title="Create Playlist">
+        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+        </svg>
+      </button>
+
+      <!-- Popover Portal -->
+      <div id="popover-portal" class="popover-portal"></div>
+
+      <!-- PWA Install Banner -->
+      <div id="pwa-install-banner" class="fixed bottom-0 end-0 z-60 sm:max-w-sm w-full mx-auto p-6 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="p-4 bg-white border border-gray-200 rounded-xl shadow-2xs dark:bg-neutral-900 dark:border-neutral-800 flex gap-x-4">
+          <svg class="shrink-0 w-8 h-auto" width="72" height="63" viewBox="0 0 72 63" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.5174 56.1528C16.2903 57.6825 16.929 61.4559 14.8118 60.9459C13.5013 60.5381 11.4445 57.6213 12.493 56.1528C12.661 55.8468 13.2189 55.2757 14.106 55.4389" stroke="currentColor" class="dark:stroke-neutral-200" stroke-width="2" stroke-linecap="round"/>
+            <path d="M15.5173 49.6263L14.0262 48.5579C13.5346 48.2056 12.8477 48.3707 12.658 48.945C12.3456 49.8907 12.1258 51.1463 12.462 52.2324C12.5336 52.4636 12.7127 52.6466 12.9449 52.7146C13.8342 52.9751 15.2568 52.9048 15.8197 51.054" stroke="currentColor" class="dark:stroke-neutral-200" stroke-width="2" stroke-linecap="round"/>
+            <ellipse cx="51.2061" cy="22.3973" rx="3.02446" ry="3.05945" fill="currentColor" class="text-gray-800 dark:fill-neutral-200"/>
+          </svg>
+          <div class="grow">
+            <p class="text-sm text-gray-800 dark:text-neutral-200">
+              Open in the app, or 
+              <a id="pwa-download-link" class="inline-flex items-center gap-x-1.5 text-blue-600 decoration-2 hover:underline font-medium dark:text-blue-500" href="#">
+                Install App
+              </a>
+            </p>
+          </div>
+          <div>
+            <button id="pwa-dismiss" type="button" class="p-2 inline-flex items-center gap-x-2 text-sm font-semibold rounded-full border border-transparent text-gray-500 hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700">
+              <span class="sr-only">Dismiss</span>
+              <svg class="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- External Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/preline@2.0.3/dist/preline.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+
+
+    <script src="./dynamicOverlays.js"></script>
+
+    <!-- Inline Scripts -->
+    <script>
+      // Theme Toggle Functionality
+      document.addEventListener('DOMContentLoaded', () => {
+        const container = document.querySelector('.theme-toggle-container');
+        const trigger = document.querySelector('.theme-trigger');
+        const themeButtons = document.querySelectorAll('.theme-options button');
+        const html = document.documentElement;
+        
+        // Set initial theme from localStorage or default
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        html.setAttribute('data-theme', savedTheme);
+        
+        // Set active button
+        themeButtons.forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.theme === savedTheme);
+          
+          btn.addEventListener('click', () => {
+            const theme = btn.dataset.theme;
+            html.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            
+            // Update button states
+            themeButtons.forEach(b => b.classList.toggle('active', b === btn));
+            
+            // Close the menu after selection
+            container.classList.remove('active');
+          });
+        });
+        
+        // Toggle menu
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          container.classList.toggle('active');
+        });
+        
+        // Close when clicking outside
+        document.addEventListener('click', () => {
+          container.classList.remove('active');
+        });
+      });
+
+      // Breadcrumb Navigation Intersection Observer
+      document.addEventListener("DOMContentLoaded", function () {
+        let nav = document.querySelector(".breadcrumb-navigation");
+        let artistTop = document.querySelector(".artistTop");
+
+        if (nav && artistTop) {
+          let observer = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (entry) {
+                nav.classList.toggle("stuck", !entry.isIntersecting);
+                artistTop.classList.toggle("stuck", !entry.isIntersecting);
+              });
+            },
+            {
+              threshold: 0,
+              rootMargin: "-1px 0px 0px 0px",
+            }
+          );
+
+          observer.observe(artistTop);
+        }
+      });
+
+      // Music Player Toggle
+      const triggerEl = document.getElementById("now-playing-area");
+      const closePlayerEl = document.getElementById("closePlayer");
+      const musicPlayer = document.querySelector(".musicPlayer");
+
+      triggerEl.addEventListener("click", () => {
+        musicPlayer.classList.toggle("show");
+      });
+
+      closePlayerEl.addEventListener("click", () => {
+        musicPlayer.classList.remove("show");
+      });
+
+      // PWA Installation Banner
+      let deferredPrompt;
+      const banner = document.getElementById("pwa-install-banner");
+      const installLink = document.getElementById("pwa-download-link");
+      const dismissBtn = document.getElementById("pwa-dismiss");
+
+      window.addEventListener("beforeinstallprompt", e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        showPWABanner();
+      });
+
+      function showPWABanner() {
+        banner.style.opacity = "1";
+        banner.style.pointerEvents = "auto";
+        banner.classList.remove("translate-y-5");
+      }
+
+      function hidePWABanner() {
+        banner.style.opacity = "0";
+        banner.style.pointerEvents = "none";
+      }
+
+      installLink.addEventListener("click", async e => {
+        e.preventDefault();
+        hidePWABanner();
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`User response to the install prompt: ${outcome}`);
+          deferredPrompt = null;
+        }
+      });
+
+      dismissBtn.addEventListener("click", hidePWABanner);
+
+      window.addEventListener("DOMContentLoaded", () => {
+        if (window.matchMedia("(display-mode: standalone)").matches) {
+          console.log("App running in standalone mode.");
+        } else if ("getInstalledRelatedApps" in navigator) {
+          navigator.getInstalledRelatedApps().then(relatedApps => {
+            if (relatedApps.length > 0) {
+              console.log("PWA installed.");
+              showPWABanner();
+            } else {
+              console.log("PWA not installed.");
+            }
+          });
+        }
+      });
+
+      // Service Worker Registration
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./system/serviceWorker.js")
+            .then(registration => {
+              console.log("Service Worker registered:", registration.scope);
+            })
+            .catch(err => {
+              console.error("Service Worker registration failed:", err);
+            });
+        });
+      }
+
+      // Eruda Dev Tools Initialization
+      eruda.init();
+
+      // Create a custom Eruda tool for live CSS editing
+      eruda.add({
+        name: "Live CSS",
+        init($el) {
+          $el.html(`
+            <textarea id="liveCssArea" style="width:100%;height:200px;"></textarea>
+            <button id="applyCssBtn">Apply CSS</button>
+          `);
+
+          let styleTag = document.createElement("style");
+          document.head.appendChild(styleTag);
+
+          $el.on("click", "#applyCssBtn", () => {
+            styleTag.innerHTML = document.getElementById("liveCssArea").value;
+          });
+        },
+        show() {},
+        hide() {},
+      });
+
+      // Floating UI Components (Tooltips, Popovers, Dropdowns)
+      (function () {
+        // Hide / then Kill Component
+        function killAllFloating() {
+          document.querySelectorAll(".gh-floating").forEach((el) => el.remove());
+        }
+
+        window.GHUI = window.GHUI || {}; // Global use
+        window.GHUI.killAllFloating = killAllFloating;
+
+        // Create the element
+        function createFloating(content, type = "tooltip") {
+          const el = document.createElement("div");
+          el.classList.add("gh-floating");
+          if (type === "dropdown") el.classList.add("gh-dropdown");
+          el.innerHTML = content;
+          document.body.appendChild(el);
+          return el;
+        }
+        
+        // Determine when & where to render it
+        function placeFloating(trigger, floating) {
+          const rect = trigger.getBoundingClientRect();
+          const floatRect = floating.getBoundingClientRect();
+          let top, left, placement = "top";
+
+          if (rect.top > floatRect.height + 10) {
+            top = window.scrollY + rect.top - floatRect.height - 12;
+            left = window.scrollX + rect.left + rect.width / 2 - floatRect.width / 2;
+            placement = "top";
+          } else if (window.innerHeight - rect.bottom > floatRect.height + 10) {
+            top = window.scrollY + rect.bottom + 12;
+            left = window.scrollX + rect.left + rect.width / 2 - floatRect.width / 2;
+            placement = "bottom";
+          } else if (rect.left > floatRect.width + 10) {
+            top = window.scrollY + rect.top + rect.height / 2 - floatRect.height / 2;
+            left = window.scrollX + rect.left - floatRect.width - 12;
+            placement = "left";
+          } else {
+            top = window.scrollY + rect.top + rect.height / 2 - floatRect.height / 2;
+            left = window.scrollX + rect.right + 12;
+            placement = "right";
+          }
+
+          floating.style.top = `${Math.max(4, top)}px`;
+          floating.style.left = `${Math.max(4, left)}px`;
+          floating.setAttribute("data-placement", placement);
+        }
+
+        // ToolTip Functionality
+        document.addEventListener(
+          "mouseenter",
+          function (e) {
+            const el = e.target.closest("[data-tooltip]");
+            if (!el) return;
+            let floating = null;
+            const content = el.getAttribute("data-tooltip");
+            floating = createFloating(content, "tooltip");
+            placeFloating(el, floating);
+            requestAnimationFrame(() => floating.setAttribute("data-show", "true"));
+
+            // Click inside tooltip on "More options…" to expand
+            floating.addEventListener("click", (ev) => {
+              const expandTrigger = ev.target.closest("[data-expand]");
+              if (expandTrigger) {
+                ev.stopPropagation();
+                floating.classList.add("gh-expanded");
+                // Replace content or append extra options
+                floating.innerHTML = `
+                  <div style="padding:4px 0;">
+                    <div style="font-weight:bold;margin-bottom:4px;">${el.dataset.album || "Album"}</div>
+                    <div class="gh-separator"></div>
+                    <div style="padding:6px;">Option A</div>
+                    <div style="padding:6px;">Option B</div>
+                    <div style="padding:6px;">Option C</div>
+                  </div>
+                `;
+                placeFloating(el, floating); // re-position after size change
+              }
+            });
+
+            el.addEventListener(
+              "mouseleave",
+              () => {
+                if (floating && !floating.classList.contains("gh-expanded")) {
+                  floating.remove();
+                  floating = null;
+                }
+              },
+              { once: true }
+            );
+
+            window.addEventListener("scroll", () => {
+              if (floating) placeFloating(el, floating);
+            });
+            window.addEventListener("resize", () => {
+              if (floating) placeFloating(el, floating);
+            });
+          },
+          true
+        );
+
+        // DropDown Menus Functionality
+        document.addEventListener(
+          "click",
+          function (e) {
+            const el = e.target.closest("[data-dropdown]");
+            if (!el) return;
+            e.stopPropagation();
+            killAllFloating(); // CLOSE ANY EXISTING FLOATERS FIRST
+            const html = el.querySelector("template")?.innerHTML || "";
+            const floating = createFloating(html, "dropdown");
+            placeFloating(el, floating);
+            requestAnimationFrame(() => floating.setAttribute("data-show", "true"));
+
+            floating.addEventListener("mouseenter", () => {
+              clearTimeout(floating._hideTimer);
+            });
+            floating.addEventListener("mouseleave", () => {
+              floating._hideTimer = setTimeout(() => {
+                floating.remove();
+              }, 200);
+            });
+          },
+          true
+        );
+
+        // When to hide / then kill the components
+        document.addEventListener("click", () => killAllFloating());
+      })();
+    </script>
+    
+    
+    
+    
+    <script>
+document.addEventListener("DOMContentLoaded", function() {
+  const trigger = document.getElementById("menu-trigger");
+  const dropdown = document.getElementById("dropdown-menu");
+
+  if (trigger && dropdown) {
+    trigger.addEventListener("click", function() {
+      dropdown.classList.toggle("show");
+    });
+  }
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="module" src="./modules/main.js"></script>
+
+
+
+
+</body>
+</html>
