@@ -19,6 +19,7 @@ export const IDS = Object.freeze({
   pauseIconNavbar: 'pause-icon-navbar',
   favoriteSongs: 'favorite-songs',
   favoriteArtists: 'favorite-artists',
+  favoriteAlbums: 'favorite-albums',
   createPlaylist: 'create-playlist',
   recentlyPlayed: 'recently-played',
   queueView: 'queue-view',

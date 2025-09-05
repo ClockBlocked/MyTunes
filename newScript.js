@@ -383,23 +383,27 @@ const player = {
     appState.currentArtist = songData.artist;
     appState.currentAlbum = songData.album;
 
+    // IMMEDIATE UI UPDATES - fixes album cover and song info display issues
+    ui.updateNowPlaying();           // Updates popup song info
+    ui.updateNavbar();               // Updates navbar song info and album cover
+    ui.updateMusicPlayer();          // Updates music player card
+    ui.updateCounts();               // Updates counters
+    mediaSession.updateMetadata(songData); // Updates system media session
+
     // Load and play the audio file
     const success = await player.loadAudioFile(songData);
 
     if (success) {
-      // IMMEDIATE UI UPDATES - fixes album cover and song info display issues
-      ui.updateNowPlaying();           // Updates popup song info
-      ui.updateNavbar();               // Updates navbar song info and album cover
-      ui.updateMusicPlayer();          // Updates music player card
-      ui.updateCounts();               // Updates counters
-      mediaSession.updateMetadata(songData); // Updates system media session
-
       // Re-bind control events after song change to ensure functionality
       setTimeout(() => {
         eventHandlers.bindControlEvents();
       }, 100);
     } else {
+      // Show error but keep UI updated
       notifications.show("Could not load audio file", NOTIFICATION_TYPES.ERROR);
+      appState.isPlaying = false;
+      ui.updatePlayPauseButtons();
+      mediaSession.updatePlaybackState(false);
     }
 
     ui.setLoadingState(false);
@@ -878,7 +882,9 @@ const popup = {
 // Dropdown menu controls - handles main navigation menu
 const dropdown = {
   // Toggle dropdown menu visibility - main menu trigger
-  toggle: () => {
+  toggle: (e) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     const menu = $byId(IDS.dropdownMenu);
     const trigger = $byId(IDS.menuTrigger);
 
@@ -894,7 +900,9 @@ const dropdown = {
   },
 
   // Open dropdown menu with counts update
-  open: () => {
+  open: (e) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     const menu = $byId(IDS.dropdownMenu);
     const trigger = $byId(IDS.menuTrigger);
 
@@ -907,7 +915,9 @@ const dropdown = {
   },
 
   // Close dropdown menu
-  close: () => {
+  close: (e) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     const menu = $byId(IDS.dropdownMenu);
     const trigger = $byId(IDS.menuTrigger);
 
@@ -915,6 +925,34 @@ const dropdown = {
 
     menu.classList.remove(CLASSES.show);
     trigger.classList.remove(CLASSES.active);
+  },
+};
+
+// Simple modal manager using the HTML dialog element
+const modals = {
+  open: (id, content) => {
+    let dialog = document.getElementById(id);
+    if (!dialog) {
+      dialog = document.createElement("dialog");
+      dialog.id = id;
+      dialog.className = "modal";
+      document.body.appendChild(dialog);
+    }
+
+    dialog.innerHTML = `<button class="modal-close" data-close>&times;</button><div class="modal-content">${content}</div>`;
+    dialog.querySelector("[data-close]").addEventListener(
+      "click",
+      () => modals.close(id),
+      { once: true }
+    );
+    dialog.showModal();
+  },
+
+  close: (id) => {
+    const dialog = document.getElementById(id);
+    if (dialog) {
+      dialog.close();
+    }
   },
 };
 
@@ -1021,20 +1059,17 @@ const playlists = {
     return null;
   },
 
-  // Show all playlists page
+  // Show all playlists in a modal
   showAll: () => {
-    views.showLoading();
+    if (appState.playlists.length === 0) {
+      modals.open(
+        "playlists-modal",
+        views.renderEmptyState("No Playlists", "You haven't created any playlists yet.", "Create your first playlist to organize your music.")
+      );
+      return;
+    }
 
-    setTimeout(() => {
-      const dynamicContent = $byId(IDS.dynamicContent);
-      if (!dynamicContent) return;
-
-      if (appState.playlists.length === 0) {
-        dynamicContent.innerHTML = views.renderEmptyState("No Playlists", "You haven't created any playlists yet.", "Create your first playlist to organize your music.");
-        return;
-      }
-
-      dynamicContent.innerHTML = `
+    const content = `
         <div class="playlists-page animate__animated animate__fadeIn">
           <div class="page-header mb-8 flex justify-between items-center">
             <div>
@@ -1048,7 +1083,7 @@ const playlists = {
               Create Playlist
             </button>
           </div>
-          
+
           <div class="playlists-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             ${appState.playlists
               .map(
@@ -1088,8 +1123,9 @@ const playlists = {
         </div>
       `;
 
-      playlists.bindEvents();
-    }, 300);
+    modals.open("playlists-modal", content);
+    const modalEl = document.getElementById("playlists-modal");
+    playlists.bindEvents(modalEl);
   },
 
   // Show individual playlist detail page
@@ -1214,8 +1250,8 @@ const playlists = {
   },
 
   // Bind events for playlist overview page
-  bindEvents: () => {
-    const dynamicContent = $byId(IDS.dynamicContent);
+  bindEvents: (root = $byId(IDS.dynamicContent)) => {
+    const dynamicContent = root;
     if (!dynamicContent) return;
 
     // Create playlist button
@@ -1726,6 +1762,13 @@ const eventHandlers = {
       [IDS.themeToggle]: theme.toggle,                 // Theme toggle menu item
     };
 
+    if (IDS.favoriteAlbums) {
+      menuActions[IDS.favoriteAlbums] = () => {
+        dropdown.close();
+        views.showFavoriteAlbums();
+      };
+    }
+
     Object.entries(menuActions).forEach(([id, handler]) => {
       const element = $byId(id);
       if (element) {
@@ -1932,22 +1975,16 @@ const eventHandlers = {
 const views = {
   // Show favorite songs page
   showFavoriteSongs: () => {
-    views.showLoading();
-
-    setTimeout(() => {
-      const dynamicContent = $byId(IDS.dynamicContent);
-      if (!dynamicContent) return;
-
-      const favoriteSongIds = Array.from(appState.favorites.songs);
-
-      if (favoriteSongIds.length === 0) {
-        dynamicContent.innerHTML = views.renderEmptyState("No Favorite Songs", "You haven't added any songs to your favorites yet.", "Browse your music and click the heart icon to add favorites.");
-        return;
-      }
-
-      const favoriteSongs = views.getSongsByIds(favoriteSongIds);
-
-      dynamicContent.innerHTML = `
+    const favoriteSongIds = Array.from(appState.favorites.songs);
+    if (favoriteSongIds.length === 0) {
+      modals.open(
+        "favorite-songs-modal",
+        views.renderEmptyState("No Favorite Songs", "You haven't added any songs to your favorites yet.", "Browse your music and click the heart icon to add favorites.")
+      );
+      return;
+    }
+    const favoriteSongs = views.getSongsByIds(favoriteSongIds);
+    const content = `
         <div class="favorites-page animate__animated animate__fadeIn">
           <div class="page-header mb-8">
             <h1 class="text-3xl font-bold mb-2">Favorite Songs</h1>
@@ -1963,7 +2000,6 @@ const views = {
               </button>
             </div>
           </div>
-          
           <div class="songs-list">
             ${favoriteSongs
               .map(
@@ -1979,19 +2015,13 @@ const views = {
                 <div class="song-duration text-gray-400 text-sm">${song.duration || "0:00"}</div>
                 <div class="song-actions flex items-center gap-2">
                   <button class="action-btn p-2 hover:bg-white/10 rounded transition-colors" data-action="favorite" data-song-id="${song.id}" title="Remove from favorites">
-                    <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                    </svg>
+                    <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                   </button>
                   <button class="action-btn p-2 hover:bg-white/10 rounded transition-colors" data-action="add-queue" title="Add to queue">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                   </button>
                   <button class="action-btn p-2 hover:bg-white/10 rounded transition-colors" data-action="add-playlist" title="Add to playlist">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                    </svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                   </button>
                 </div>
               </div>
@@ -2001,40 +2031,32 @@ const views = {
           </div>
         </div>
       `;
-
-      views.bindFavoriteSongsEvents();
-    }, 300);
+    modals.open("favorite-songs-modal", content);
+    const modalEl = document.getElementById("favorite-songs-modal");
+    views.bindFavoriteSongsEvents(modalEl);
   },
 
   // Show favorite artists page
   showFavoriteArtists: () => {
-    views.showLoading();
+    const favoriteArtistNames = Array.from(appState.favorites.artists);
+    if (favoriteArtistNames.length === 0) {
+      modals.open(
+        "favorite-artists-modal",
+        views.renderEmptyState("No Favorite Artists", "You haven't added any artists to your favorites yet.", "Browse artists and click the heart icon to add favorites.")
+      );
+      return;
+    }
+    const favoriteArtists = favoriteArtistNames
+      .map((artistName) => window.music?.find((a) => a.artist === artistName))
+      .filter(Boolean);
 
-    setTimeout(() => {
-      const dynamicContent = $byId(IDS.dynamicContent);
-      if (!dynamicContent) return;
-
-      const favoriteArtistNames = Array.from(appState.favorites.artists);
-
-      if (favoriteArtistNames.length === 0) {
-        dynamicContent.innerHTML = views.renderEmptyState("No Favorite Artists", "You haven't added any artists to your favorites yet.", "Browse artists and click the heart icon to add favorites.");
-        return;
-      }
-
-      const favoriteArtists = favoriteArtistNames
-        .map((artistName) => {
-          const artistData = window.music?.find((a) => a.artist === artistName);
-          return artistData;
-        })
-        .filter(Boolean);
-
-      dynamicContent.innerHTML = `
+    const content = `
         <div class="favorites-page animate__animated animate__fadeIn">
           <div class="page-header mb-8">
             <h1 class="text-3xl font-bold mb-2">Favorite Artists</h1>
             <p class="text-gray-400">${favoriteArtists.length} artist${favoriteArtists.length !== 1 ? "s" : ""}</p>
           </div>
-          
+
           <div class="artists-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             ${favoriteArtists
               .map(
@@ -2051,9 +2073,7 @@ const views = {
                 <h3 class="font-medium text-center mb-1">${artist.artist}</h3>
                 <p class="text-gray-400 text-sm text-center">${artist.albums.length} album${artist.albums.length !== 1 ? "s" : ""}</p>
                 <div class="flex justify-center mt-2">
-                  <button class="unfavorite-artist-btn text-red-500 hover:text-red-400 text-sm transition-colors" data-artist="${artist.artist}">
-                    Remove from Favorites
-                  </button>
+                  <button class="unfavorite-artist-btn text-red-500 hover:text-red-400 text-sm transition-colors" data-artist="${artist.artist}">Remove from Favorites</button>
                 </div>
               </div>
             `
@@ -2062,14 +2082,53 @@ const views = {
           </div>
         </div>
       `;
+    modals.open("favorite-artists-modal", content);
+    const modalEl = document.getElementById("favorite-artists-modal");
+    views.bindFavoriteArtistsEvents(modalEl);
+  },
 
-      views.bindFavoriteArtistsEvents();
-    }, 300);
+  showFavoriteAlbums: () => {
+    const favoriteAlbumIds = Array.from(appState.favorites.albums);
+    if (favoriteAlbumIds.length === 0) {
+      modals.open(
+        "favorite-albums-modal",
+        views.renderEmptyState("No Favorite Albums", "You haven't added any albums to your favorites yet.", "Browse albums and click the heart icon to add favorites.")
+      );
+      return;
+    }
+    const favoriteAlbums = views.getAlbumsByIds(favoriteAlbumIds);
+    const content = `
+        <div class="favorites-page animate__animated animate__fadeIn">
+          <div class="page-header mb-8">
+            <h1 class="text-3xl font-bold mb-2">Favorite Albums</h1>
+            <p class="text-gray-400">${favoriteAlbums.length} album${favoriteAlbums.length !== 1 ? "s" : ""}</p>
+          </div>
+          <div class="albums-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            ${favoriteAlbums
+              .map(
+                (album, index) => `
+              <div class="album-card cursor-pointer" style="animation-delay: ${index * 100}ms;" data-album-id="${album.id}">
+                <img src="${utils.getAlbumImageUrl(album.album)}" alt="${album.album}" class="w-full aspect-square object-cover rounded mb-4">
+                <h3 class="font-medium text-center mb-1">${album.album}</h3>
+                <p class="text-gray-400 text-sm text-center">${album.artist}</p>
+                <div class="flex justify-center mt-2">
+                  <button class="unfavorite-album-btn text-red-500 hover:text-red-400 text-sm transition-colors" data-album-id="${album.id}">Remove from Favorites</button>
+                </div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        </div>
+      `;
+    modals.open("favorite-albums-modal", content);
+    const modalEl = document.getElementById("favorite-albums-modal");
+    views.bindFavoriteAlbumsEvents(modalEl);
   },
 
   // Bind events for favorite songs page
-  bindFavoriteSongsEvents: () => {
-    const dynamicContent = $byId(IDS.dynamicContent);
+  bindFavoriteSongsEvents: (root = $byId(IDS.dynamicContent)) => {
+    const dynamicContent = root;
     if (!dynamicContent) return;
 
     // Play all favorite songs button
@@ -2147,7 +2206,7 @@ const views = {
             songRow.remove();
             const remainingSongs = dynamicContent.querySelectorAll(".song-row");
             if (remainingSongs.length === 0) {
-              views.showFavoriteSongs();
+              modals.close("favorite-songs-modal");
             }
           }, 300);
         } else if (action === "add-queue") {
@@ -2160,8 +2219,8 @@ const views = {
   },
 
   // Bind events for favorite artists page
-  bindFavoriteArtistsEvents: () => {
-    const dynamicContent = $byId(IDS.dynamicContent);
+  bindFavoriteArtistsEvents: (root = $byId(IDS.dynamicContent)) => {
+    const dynamicContent = root;
     if (!dynamicContent) return;
 
     // Artist card click events for navigation
@@ -2221,9 +2280,41 @@ const views = {
           artistCard.remove();
           const remainingArtists = dynamicContent.querySelectorAll(".artist-card");
           if (remainingArtists.length === 0) {
-            views.showFavoriteArtists();
+            modals.close("favorite-artists-modal");
           }
         }, 300);
+      });
+    });
+  },
+
+  bindFavoriteAlbumsEvents: (root = $byId(IDS.dynamicContent)) => {
+    const container = root;
+    if (!container) return;
+
+    container.querySelectorAll(".unfavorite-album-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const albumId = btn.dataset.albumId;
+        appState.favorites.remove("albums", albumId);
+        const card = btn.closest(".album-card");
+        card?.remove();
+        if (!container.querySelector(".album-card")) {
+          modals.close("favorite-albums-modal");
+        }
+      });
+    });
+
+    container.querySelectorAll(".album-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        const albumId = card.dataset.albumId;
+        const album = views.getAlbumsByIds([albumId])[0];
+        if (album) {
+          appState.queue.clear();
+          album.songs.slice(1).forEach((song) =>
+            appState.queue.add({ ...song, artist: album.artist, album: album.album, cover: utils.getAlbumImageUrl(album.album) })
+          );
+          player.playSong({ ...album.songs[0], artist: album.artist, album: album.album, cover: utils.getAlbumImageUrl(album.album) });
+        }
       });
     });
   },
@@ -2250,6 +2341,25 @@ const views = {
     });
 
     return songs;
+  },
+
+  getAlbumsByIds: (ids) => {
+    if (!window.music || !ids.length) return [];
+    const albums = [];
+    window.music.forEach((artist) => {
+      artist.albums.forEach((album) => {
+        const albumId = album.id || album.album;
+        if (ids.includes(albumId)) {
+          albums.push({
+            ...album,
+            id: albumId,
+            artist: artist.artist,
+            cover: utils.getAlbumImageUrl(album.album),
+          });
+        }
+      });
+    });
+    return albums;
   },
 
   // Show loading spinner
